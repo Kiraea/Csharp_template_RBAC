@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using WebApplication1.Dtos.Account;
 using WebApplication1.Interfaces;
 using WebApplication1.Models;
@@ -123,7 +124,7 @@ public class AccountController : ControllerBase
         // cant create since no frontend
         //var callback = QueryString.Create()
         // this is just to test
-
+        var callback = QueryHelpers.AddQueryString("http://localhost:5246", queryParams!);
         await _emailSender.SendEmailAsync(request.Email, "Reset Password", $"Please Reset YourPassWord: {queryParams}");
         
         return Ok(new { Token = resetToken, Email = request.Email});

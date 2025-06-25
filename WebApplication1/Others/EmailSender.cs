@@ -1,14 +1,15 @@
 using System.Net;
 using System.Net.Mail;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Options;
 
 namespace WebApplication1.Others;
 
 public class EmailSender: IEmailSender
 {
-    private readonly EmailConfiguration _emailConfiguration;
+    private readonly IOptions<EmailConfiguration> _emailConfiguration;
 
-    public EmailSender(EmailConfiguration emailConfiguration)
+    public EmailSender(IOptions<EmailConfiguration> emailConfiguration)
     {
         _emailConfiguration = emailConfiguration ?? throw new InvalidOperationException("EmailSender Class was not implemented");
     }
@@ -19,15 +20,15 @@ public class EmailSender: IEmailSender
         var mailMessage = new MailMessage();
         mailMessage.Subject = subject;
         mailMessage.To.Add(email);
-        mailMessage.From = new MailAddress(_emailConfiguration.From);
+        mailMessage.From = new MailAddress(_emailConfiguration.Value.From);
         mailMessage.IsBodyHtml = true;
         mailMessage.Body = htmlMessage;
 
-        using (var client = new SmtpClient(_emailConfiguration.SmtpServer))
+        using (var client = new SmtpClient(_emailConfiguration.Value.SmtpServer))
         {
-            client.Port = _emailConfiguration.Port;
+            client.Port = _emailConfiguration.Value.Port;
             client.EnableSsl = true;
-            client.Credentials = new NetworkCredential(_emailConfiguration.Username, _emailConfiguration.Password);
+            client.Credentials = new NetworkCredential(_emailConfiguration.Value.Username, _emailConfiguration.Value.Password);
             client.UseDefaultCredentials = false;// make false cause default true
 
             try

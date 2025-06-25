@@ -115,8 +115,15 @@ builder.Services.AddSwaggerGen(options =>
 
 
 //---------------------------
+
 // basically what this does is get the section of emailconfiguration in appsettings.json and then binds it to email configuration class
-var emailConfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+// use direct injection
+
+// basically theres 2 options direct injection or use IOptions ioptions is usuaally to map configuration in appsettings to class
+// var emailConfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+// if u use this no need for AddScoped its already in IOptions when params
+var emailConfig = builder.Services.AddOptions<EmailConfiguration>()
+    .Bind(builder.Configuration.GetSection("EmailConfiguration"));
 
 if (emailConfig == null)
 {
@@ -124,11 +131,19 @@ if (emailConfig == null)
 }
 // basically creates a singleton class of email config
 builder.Services.AddSingleton(emailConfig);
+
+
+
 // we iherit iemailsender to email sender create an emailsender class
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 
 //---------------------------
 var app = builder.Build();
+
+
+
+
+
 // code to test if connection was sucesfull
 //bassically instantiating application db context in this scope context only
 // can be done for anything that is injected like logger etc

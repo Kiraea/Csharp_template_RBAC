@@ -15,6 +15,7 @@ public record RegisterUserRequest
     public required string Password { get; set; }
     
     
+    
     [Required]
     public required string DisplayName { get; set; }
 }

@@ -1,11 +1,14 @@
+using System.Runtime.InteropServices.JavaScript;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using WebApplication1.Data;
 using WebApplication1.Interfaces;
 using WebApplication1.Models;
+using WebApplication1.Others;
 using WebApplication1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,7 +72,15 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     options.Password.RequiredUniqueChars = 0;
     options.Password.RequireNonAlphanumeric = false;
     
-}).AddEntityFrameworkStores<ApplicationDbContext>();
+}).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+// add default token providers is basically for restting passwords change email phone numbers etc cause uneed to send a token
+
+// bascically for the tokens that we used for the reset password we can configure the options of that
+builder.Services.Configure<DataProtectionTokenProviderOptions>((options) =>
+{
+    options.TokenLifespan = TimeSpan.FromHours(2);
+});
+
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 
@@ -102,6 +113,21 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+
+//---------------------------
+// basically what this does is get the section of emailconfiguration in appsettings.json and then binds it to email configuration class
+var emailConfig = builder.Configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+
+if (emailConfig == null)
+{
+    throw new InvalidOperationException("Email Config could not be binded check email config");
+}
+// basically creates a singleton class of email config
+builder.Services.AddSingleton(emailConfig);
+// we iherit iemailsender to email sender create an emailsender class
+builder.Services.AddScoped<IEmailSender, EmailSender>();
+
+//---------------------------
 var app = builder.Build();
 // code to test if connection was sucesfull
 //bassically instantiating application db context in this scope context only

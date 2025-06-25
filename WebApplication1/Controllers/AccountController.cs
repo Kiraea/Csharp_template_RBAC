@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Dtos.Account;
 using WebApplication1.Interfaces;
@@ -13,12 +14,13 @@ public class AccountController : ControllerBase
     private readonly ITokenService _tokenService;
     private readonly SignInManager<AppUser> _signInManager;
     private readonly UserManager<AppUser> _userManager;
-    
-    public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService)
+    private readonly IEmailSender _emailSender;    
+    public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService, IEmailSender emailSender)
     {
         _tokenService = tokenService;
         _userManager = userManager;
         _signInManager = signInManager;
+        _emailSender = emailSender;
     }
     
     [HttpPost("/register")]
@@ -95,5 +97,63 @@ public class AccountController : ControllerBase
             Email = request.Email,
             token = token
         });
+    }
+
+    [HttpPost("/forgotpassword")]
+    public async Task<ActionResult<dynamic>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany((e) => e.Errors).Select(e => e.ErrorMessage);
+        }
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+
+        if (user is null)
+        {
+            return Unauthorized("Invalid Request");
+        }
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var queryParams = new Dictionary<string, string>
+        {
+            { "Token", resetToken },
+            { "Email", request.Email }
+        };
+        // cant create since no frontend
+        //var callback = QueryString.Create()
+        // this is just to test
+
+        await _emailSender.SendEmailAsync(request.Email, "Reset Password", $"Please Reset YourPassWord: {queryParams}");
+        
+        return Ok(new { Token = resetToken, Email = request.Email});
+
+    }
+
+    [HttpPost("/forgotpasswordcallback")]
+    public async Task<ActionResult<dynamic>> ForgotPasswordCallback([FromBody] ForgotPasswordCallbackRequest request)
+    {
+       if (!ModelState.IsValid)
+       {
+           var errors = ModelState.Values.SelectMany((e) => e.Errors).Select((e) => e.ErrorMessage);
+           return BadRequest(errors);
+       }
+
+       var userResult = await _userManager.FindByEmailAsync(request.Email);
+
+       if (userResult == null)
+       {
+           return BadRequest("Invalid Request, Try the process again");
+       }
+
+       var checkTokenResult = await _userManager.ResetPasswordAsync(userResult, request.Token, request.Password);
+
+       if (checkTokenResult.Succeeded == false)
+       { 
+           return BadRequest("Invalid Request, Try the process again");
+       }
+
+       return Ok("Password succesfully changed");
+        
     }
 }

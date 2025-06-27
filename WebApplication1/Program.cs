@@ -39,6 +39,9 @@ builder.Services.AddAuthentication((options) =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     // actively checks if user is authencicated if not 401
     options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddCookie((options) =>
+{
+    
 }).AddJwtBearer((options) =>
 {
     options.TokenValidationParameters = new TokenValidationParameters()

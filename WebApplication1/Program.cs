@@ -39,9 +39,6 @@ builder.Services.AddAuthentication((options) =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     // actively checks if user is authencicated if not 401
     options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddCookie((options) =>
-{
-    
 }).AddJwtBearer((options) =>
 {
     options.TokenValidationParameters = new TokenValidationParameters()
@@ -58,8 +55,21 @@ builder.Services.AddAuthentication((options) =>
         IssuerSigningKey =
             new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SigningKey"]!))
     };
-    
-    
+    options.Events = new JwtBearerEvents()
+    {
+        // this is intercepting the message getting the cokoie and getting hte access token before actually doing th evalidation on top
+        OnMessageReceived = (ctx) =>
+        {
+            var cookie = ctx.Request.Cookies.TryGetValue("accessToken", out var accessToken);
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                ctx.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+
+
 });
 // adding this basically adds the signinmanager, usermanager,
 // but technically u still need to connect identity oto how it will talk to EF or db context so u add entity framework
